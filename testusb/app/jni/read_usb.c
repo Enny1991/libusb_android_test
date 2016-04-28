@@ -160,7 +160,7 @@ static void cb_xfr(struct libusb_transfer *xfr)
 }
 
 #define NUM_TRANSFERS 10
-#define PACKET_SIZE 784
+#define PACKET_SIZE 200
 #define NUM_PACKETS 20
 
 int rx_decode_buffer(const short *buf_48k_stereo, int ll) {
@@ -180,6 +180,8 @@ int rx_decode_buffer(const short *buf_48k_stereo, int ll) {
         env = void_env;
     }
        int start = 0;
+
+
     short bbuf[ll];
     jshortArray audioShortArray = (*env)->NewShortArray(env, PACKET_SIZE * 20);
 
@@ -237,9 +239,8 @@ static void transfer_cb(struct libusb_transfer *xfr) {
     /* Call freedv. */
     // Call write()N
 
-    //rx_decode_buffer((short *)recv, len);
+    rx_decode_buffer((short *)recv, len);
 
-    LOGD("== %u",data[2]);
 
 
         free(recv);
@@ -529,8 +530,8 @@ int main(int argc, char** argv){
                     LOGD("Try reclaiming interface %d after detach kernel: %s", iface, libusb_error_name(r));
                 }
 
-                rc = libusb_set_interface_alt_setting(devh, 1, 1);
-                LOGD("Try to set alternative settings %d on IFACE %d: %s",5, 1, libusb_error_name(rc));
+                rc = libusb_set_interface_alt_setting(devh, 1, 3);
+                LOGD("Try to set alternative settings %d on IFACE %d: %s",3, 1, libusb_error_name(rc));
 
             	/*
             rc = libusb_kernel_driver_active(devh, IFACE_NUM);

@@ -225,6 +225,11 @@ public class Main extends AppCompatActivity {
             return;
         }
         print("\n> " + TextUtils.join(" ", exe));
+        //
+        AudioPlayback.setup();
+        UsbAudio mUsbAudio = new UsbAudio();
+        mUsbAudio.setup();
+        //
         Jaemon tst = new Jaemon(exe, getEnv(), testLog);
         tst.run();
         print("  exit :" + tst.getResult() + "\n");
