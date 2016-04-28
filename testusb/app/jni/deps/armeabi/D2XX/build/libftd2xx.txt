@@ -1,0 +1,19 @@
+Output of 'file' command:
+=========================
+./build/arm-v5-sf/libftd2xx.so.1.3.6: ELF 32-bit LSB  shared object, ARM, EABI5 version 1 (SYSV), dynamically linked, BuildID[sha1]=7b18062e29f011f532d6bcfd15662856be4b97ae, not stripped
+Output of 'readelf -A' command:
+===============================
+Attribute Section: aeabi
+File Attributes
+  Tag_CPU_name: "5T"
+  Tag_CPU_arch: v5T
+  Tag_ARM_ISA_use: Yes
+  Tag_THUMB_ISA_use: Thumb-1
+  Tag_ABI_PCS_wchar_t: 4
+  Tag_ABI_FP_rounding: Needed
+  Tag_ABI_FP_denormal: Needed
+  Tag_ABI_FP_exceptions: Needed
+  Tag_ABI_FP_number_model: IEEE 754
+  Tag_ABI_align_needed: 8-byte
+  Tag_ABI_align_preserved: 8-byte, except leaf SP
+  Tag_ABI_enum_size: int

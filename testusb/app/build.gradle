@@ -1,0 +1,108 @@
+apply plugin: 'com.android.model.application'
+
+model {
+    android {
+        compileSdkVersion = 23
+        buildToolsVersion = "24.0.0 rc2"
+
+        ndk {
+            moduleName "jaemon"
+        }
+
+        defaultConfig {
+            applicationId "com.eneaceolini.testusb"
+            minSdkVersion.apiLevel = 15
+            targetSdkVersion.apiLevel = 23
+            versionCode 1
+            versionName "1.0"
+
+            buildConfigFields {
+                create() {
+                    type "int"
+                    name "VALUE"
+                    value "1"
+                }
+            }
+        }
+
+
+
+        sources {
+            main {
+                jni {
+                    source {
+                        srcDir 'src'
+                    }
+                }
+            }
+        }
+
+        buildTypes {
+            release {
+                minifyEnabled false
+                applicationIdSuffix '.release'
+                proguardFiles.add(file('proguard-rules.pro'))
+                ndk {
+                    debuggable true
+                }
+            }
+            debug{
+                applicationIdSuffix '.debug'
+                proguardFiles.add(file('proguard-rules.pro'))
+            }
+        }
+
+        productFlavors {
+            create("flavour1"){
+                applicationId  'com.eneaceolini.testusb'
+
+            }
+            create("x86") {
+                applicationId  'com.eneaceolini.testusb'
+
+                ndk.with{
+                    abiFilters.add("x86")
+                }
+            }
+            create("arm") {
+                applicationId 'com.eneaceolini.testusb'
+                ndk.with{
+                    abiFilters.add("armeabi-v7a")
+                }
+            }
+
+            create("fat") {
+                applicationId 'com.eneaceolini.testusb'
+                // If ndk.abiFilters is not configured, the application
+                // compile and package all suppported ABI.
+            }
+
+        }
+    }
+    components.android {
+        binaries.afterEach { binary ->
+            binary.mergedNdkConfig.cppFlags.add(
+                    "-DVARIANT=\"" + binary.name + "\"")
+        }
+    }
+}
+
+task nativeLibsToJar(type: Zip, description: 'create a jar archive of the native libs') {
+    destinationDir file("$buildDir/native-libs")
+    baseName 'native-libs'
+    extension 'jar'
+    from fileTree(dir: 'libs', include: '**/*.so')
+    into 'lib/'
+}
+
+tasks.withType(JavaCompile) {
+    compileTask -> compileTask.dependsOn(nativeLibsToJar)
+}
+
+
+dependencies {
+    compile fileTree(dir: "$buildDir/native-libs", include: 'native-libs.jar')
+    //compile fileTree(dir: 'libs', include: ['*.jar'])
+    testCompile 'junit:junit:4.12'
+    compile 'com.android.support:appcompat-v7:23.3.0'
+}

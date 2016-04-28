@@ -1,0 +1,34 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools" tools:context=".Main">
+
+<item
+        android:id="@+id/runTests"
+        android:orderInCategory="100"
+        android:onClick="onClickMenuTest"
+        android:icon="@drawable/ic_action_play"
+        android:title="@string/menu_run_tests"
+        app:showAsAction="always"/>
+    <item
+        android:id="@+id/empty"
+        android:title="..."
+        android:icon="@drawable/ic_action_overflow"
+        android:orderInCategory="100"
+        app:showAsAction="always">
+        <menu>
+            <item
+                android:id="@+id/menu_enable_debug"
+                android:title="@string/menu_enable_debug"
+                android:checkable="true"
+                android:onClick="onClickMenuDebug"/>
+            <item
+                android:id="@+id/menu_clear_screen"
+                android:title="@string/menu_clear_screen"
+                android:onClick="onClickMenuClear"/>
+            <item
+                android:id="@+id/start_new"
+                android:title="@string/start_transfer"
+                android:onClick="onClickStartNew"/>
+        </menu>
+    </item>
+</menu>
