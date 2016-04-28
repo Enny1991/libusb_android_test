@@ -5,7 +5,7 @@ LIBUSB_ROOT_ABS:= $(LOCAL_PATH)/../..
 
 include $(CLEAR_VARS)
 
-LOCAL_SRC_FILES := usbaudio_dump.c
+LOCAL_SRC_FILES := read_usb.c
 
 LOCAL_C_INCLUDES += \
   $(LIBUSB_ROOT_ABS)

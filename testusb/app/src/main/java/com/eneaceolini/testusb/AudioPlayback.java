@@ -30,7 +30,5 @@ public class AudioPlayback {
 	
 	public static void write(short[] decodedAudio) {
 		track.write(decodedAudio, 0, decodedAudio.length);
-
-		Log.d(TAG,"called ");
 	}
 }

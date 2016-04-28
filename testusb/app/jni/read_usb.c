@@ -1,3 +1,7 @@
+//
+// Created by enea on 28.04.16.
+//
+
 /*
  *
  * Dumb userspace USB Audio receiver
@@ -86,19 +90,10 @@ const struct libusb_endpoint_descriptor *endpoint;
 	char string[128];
 	uint8_t string_index[3];	// indexes of the string descriptors
 	uint8_t endpoint_in = 0, endpoint_out = 0;	// default IN and OUT endpoints
+      /* pointer to native method interface */
+JavaVMInitArgs vm_args; /* JDK/JRE 6 VM initialization arguments */
 
-JavaVM *jvm;       /* denotes a Java VM */
-        JNIEnv *env;       /* pointer to native method interface */
-        JavaVMInitArgs vm_args; /* JDK/JRE 6 VM initialization arguments */
-        JavaVMOption* options = new JavaVMOption[1];
-        options[0].optionString = "-Djava.class.path=/usr/lib/java";
-        vm_args.version = JNI_VERSION_1_6;
-        vm_args.nOptions = 1;
-        vm_args.options = options;
-        vm_args.ignoreUnrecognized = false;
-        /* load and initialize a Java VM, return a JNI interface
-         * pointer in env */
-        JNI_CreateJavaVM(&jvm, (void**)&env, &vm_args);
+
 
 static void cb_xfr(struct libusb_transfer *xfr)
 {
@@ -170,6 +165,7 @@ static void cb_xfr(struct libusb_transfer *xfr)
 
 int rx_decode_buffer(const short *buf_48k_stereo, int ll) {
 
+
     int ret = 0, i;
 // Get an env handle
     JNIEnv * env;
@@ -208,7 +204,6 @@ int rx_decode_buffer(const short *buf_48k_stereo, int ll) {
 
 static void transfer_cb(struct libusb_transfer *xfr) {
 
-    LOGD("Callback...");
     int rc = 0;
     int len = 0;
     unsigned int i;
@@ -242,8 +237,9 @@ static void transfer_cb(struct libusb_transfer *xfr) {
     /* Call freedv. */
     // Call write()N
 
-    // rx_decode_buffer((short *)recv, len);
-    //LOGD("Length %d",len);
+    //rx_decode_buffer((short *)recv, len);
+
+    LOGD("== %u",data[2]);
 
 
         free(recv);
@@ -273,7 +269,6 @@ int usb_start_transfers() {
         }
 
                    // set iso packet length
-        if(devh == NULL) LOGD("device handle is NULL");
 
         libusb_fill_iso_transfer(xfr[i], devh, EP_ISO_IN, buf,
                 sizeof(buf), num_iso_pack, transfer_cb, NULL, 1000);
@@ -348,22 +343,12 @@ unsigned int measure(void)
     return num_bytes;
 }
 
-JNIEXPORT jint JNICALL
-Java_com_example_enea_readsoundcard_UsbAudio_measure(JNIEnv* env UNUSED, jobject foo UNUSED) {
-    return measure();
-}
 
-JNIEXPORT jint JNICALL
-JNI_OnLoad(JavaVM* vm, void* reserved UNUSED)
-{
-    LOGD("libusbaudio: loaded");
-    java_vm = vm;
 
-    return JNI_VERSION_1_6;
-}
 
 int main(int argc, char** argv){
     LOGD("entered main");
+
 
     /*
     JNIEnv * env;
@@ -378,6 +363,8 @@ int main(int argc, char** argv){
         env = void_env;
     }
     */
+
+
 
     bool show_help = false;
     	bool debug_mode = false;
@@ -497,9 +484,9 @@ int main(int argc, char** argv){
         	LOGD("Getting bos descriptor: %s", libusb_error_name(rc));
         	nb_ifaces = conf_desc->bNumInterfaces;
 
-        	r = libusb_set_auto_detach_kernel_driver(devh, 1);
-        	LOGD("Try auto-detach: %s",libusb_error_name(r));
-
+        	//r = libusb_set_auto_detach_kernel_driver(devh, 1);
+        	//LOGD("Try auto-detach: %s",libusb_error_name(r));
+/*
             for (iface = 0; iface < nb_ifaces; iface++)
             	{
             	    LOGD("Claiming iface %d ...", iface);
@@ -524,15 +511,26 @@ int main(int argc, char** argv){
                         LOGD("Iface %d - alt_sett %d is %d/%d: has %d endpoints: %s",iface,j,conf_desc->usb_interface[iface].altsetting[j].bInterfaceClass,conf_desc->usb_interface[iface].altsetting[j].bInterfaceSubClass,conf_desc->usb_interface[iface].altsetting[j].bNumEndpoints, libusb_error_name(rc));
 
                         for(k=0;k<conf_desc->usb_interface[iface].altsetting[j].bNumEndpoints;k++){
-                            endpoint = &conf_desc->usb_interface[iface].altsetting[1].endpoint[k];
+                            endpoint = &conf_desc->usb_interface[iface].altsetting[j].endpoint[k];
                             LOGD("  Endpoint %d | Address : %04X | MAX_PACKET_SIZE = %04X",k,endpoint->bEndpointAddress,endpoint->wMaxPacketSize);
                         }
                         }
                     }
             	}
-
+*/
             	// safe
+            	LOGD("Claiming iface %d ...", 1);
+            	r = libusb_claim_interface(devh, 1);
+                if (r != LIBUSB_SUCCESS) {
+                    LOGD("Failed to claim iface %d: %s. Detaching kernel interface...", iface, libusb_error_name(r));
+                    rc = libusb_detach_kernel_driver(devh, 1);
+                    LOGD("Detaching kernel iface: %s", libusb_error_name(rc));
+                    r = libusb_claim_interface(devh, 1);
+                    LOGD("Try reclaiming interface %d after detach kernel: %s", iface, libusb_error_name(r));
+                }
 
+                rc = libusb_set_interface_alt_setting(devh, 1, 1);
+                LOGD("Try to set alternative settings %d on IFACE %d: %s",5, 1, libusb_error_name(rc));
 
             	/*
             rc = libusb_kernel_driver_active(devh, IFACE_NUM);
@@ -595,6 +593,7 @@ int main(int argc, char** argv){
                 if (rc != 0) {
                     LOGD("usb_start_transfers: %d\n" ,rc);
                 }
+
             LOGD("Good to Go!");
             // Good to go
             /*
@@ -607,138 +606,21 @@ int main(int argc, char** argv){
 
             */
     	//
+    	while(true){
     	rc = libusb_handle_events(NULL);
-        		if (rc != LIBUSB_SUCCESS)
-        			return 0;
+        }
+
+
     	return 0;
 
-}
-
-
-JNIEXPORT void JNI_OnUnload(JavaVM* vm, void* reserved UNUSED)
-{
-    JNIEnv * env;
-    void * void_env;
-    (*java_vm)->GetEnv(vm, &void_env, JNI_VERSION_1_6);
-    env = void_env;
-
-    (*env)->DeleteGlobalRef(env, au_id_jms_usbaudio_AudioPlayback);
-
-    LOGD("libusbaudio: unloaded");
 }
 
 JNIEXPORT jboolean JNICALL
 Java_com_eneaceolini_testusb_UsbAudio_setup(JNIEnv* env UNUSED, jobject foo UNUSED)
 {
-	int rc,k,j;
-    const struct libusb_version* version;
-
-	rc = libusb_init(NULL);
-	if (rc < 0) {
-		LOGD("Error initializing libusb: %s\n", libusb_error_name(rc));
-        return false;
-	}
-	LOGD("Init LIBUSB: %s", libusb_error_name(rc));
-
-
-	//version = libusb_get_version();
-	//LOGD("Using libusb v%d.%d.%d.%d\n\n", version->major, version->minor, version->micro, version->nano);
-
-    /* This device is the TI PCM2900C Audio CODEC default VID/PID. */
-	devh = libusb_open_device_with_vid_pid(NULL, VID, PID);
-	if (!devh) {
-		LOGD("Error finding USB device\n");
-        libusb_exit(NULL);
-        return false;
-	}else{
-	LOGD("Device handle properly captured.");
-	}
-
-	// setup transfer of all possible interfaces
-	dev = libusb_get_device(devh);
-	if(!dev){
-	LOGD("Failed to connected from handle.");
-	}else{
-	LOGD("Connected to device.");
-	}
-
-	rc = libusb_get_device_descriptor(dev, &dev_desc);
-    LOGD("Getting Device descriptor: %s", libusb_error_name(rc));
-	rc = libusb_get_config_descriptor(dev, 0, &conf_desc);
-	LOGD("Getting config descriptor: %s", libusb_error_name(rc));
-	rc = libusb_get_bos_descriptor(devh, &bos_desc);
-	LOGD("Getting bos descriptor: %s", libusb_error_name(rc));
-	nb_ifaces = conf_desc->bNumInterfaces;
-
-	r = libusb_set_auto_detach_kernel_driver(devh, 1);
-	LOGD("Try auto-detach: %s",libusb_error_name(r));
-
-    for (iface = 0; iface < nb_ifaces; iface++)
-    	{
-    	    LOGD("Claiming iface %d ...", iface);
-    		r = libusb_claim_interface(devh, iface);
-    		if (r != LIBUSB_SUCCESS) {
-    		LOGD("Failed to claim iface %d: %s. Detaching kernel interface...", iface, libusb_error_name(r));
-    		    rc = libusb_detach_kernel_driver(devh, iface);
-    		    LOGD("Detaching kernel iface: %s", libusb_error_name(rc));
-    			r = libusb_claim_interface(devh, iface);
-    			LOGD("Try reclaiming interface %d after detach kernel: %s", iface, libusb_error_name(r));
-    		}
-
-    		rc = libusb_set_interface_alt_setting(devh, iface, 2);
-    		LOGD("Try to set alternative settings 1 on iface %d: %s", iface, libusb_error_name(rc));
-            if (rc == LIBUSB_SUCCESS){
-                //count endopints
-                LOGD("Iface %d has %d alt_set: %s",iface,conf_desc->usb_interface[iface].num_altsetting, libusb_error_name(rc));
-
-                for(j = 0; j < conf_desc->usb_interface[iface].num_altsetting; j++){
-                LOGD("Iface %d - alt_sett %d is %d/%d: has %d endpoints: %s",iface,j,conf_desc->usb_interface[iface].altsetting[j].bInterfaceClass,conf_desc->usb_interface[iface].altsetting[j].bInterfaceSubClass,conf_desc->usb_interface[iface].altsetting[j].bNumEndpoints, libusb_error_name(rc));
-                        LOGD("%d",conf_desc->usb_interface[iface].altsetting[j].iInterface);
-
-                for(k=0;k<conf_desc->usb_interface[iface].altsetting[j].bNumEndpoints;k++){
-                    endpoint = &conf_desc->usb_interface[iface].altsetting[1].endpoint[k];
-                    LOGD("  Endpoint %d | Address : %04X | MAX_PACKET_SIZE = %04X",k,endpoint->bEndpointAddress,endpoint->wMaxPacketSize);
-                }
-                }
-            }
-    	}
-
-    	// safe
-
-
-    	/*
-    rc = libusb_kernel_driver_active(devh, IFACE_NUM);
-    if (rc == 1) {
-        rc = libusb_detach_kernel_driver(devh, IFACE_NUM);
-        if (rc < 0) {
-            LOGD("Could not detach kernel driver: %s\n",
-                    libusb_error_name(rc));
-            libusb_close(devh);
-            libusb_exit(NULL);
-            return false;
-        }
-    }
-*/
-
-	//rc = libusb_claim_interface(devh, IFACE_NUM);
-/*
-	if (rc < 0) {
-		LOGD("Error claiming interface: %s\n", libusb_error_name(rc));
-        libusb_close(devh);
-        libusb_exit(NULL);
-        return false;
-    }
 
 
 
-	rc = libusb_set_interface_alt_setting(devh, IFACE_NUM, 1);
-	if (rc < 0) {
-		LOGD("Error setting alt setting: %s\n", libusb_error_name(rc));
-        libusb_close(devh);
-        libusb_exit(NULL);
-        return false;
-	}
-*/
     // Get write callback handle
     jclass clazz = (*env)->FindClass(env, "com/eneaceolini/testusb/AudioPlayback");
     if (!clazz) {
@@ -760,103 +642,17 @@ Java_com_eneaceolini_testusb_UsbAudio_setup(JNIEnv* env UNUSED, jobject foo UNUS
     }
 
 
-    rc = usb_start_transfers();
-        if (rc != 0) {
-            LOGD("usb_start_transfers: %d\n" ,rc);
-        }
-    LOGD("Good to Go!");
-    // Good to go
-    /*
-    do_exit = 0;
-    LOGD("Starting capture");
-	if ((rc = benchmark_in(EP_ISO_IN)) < 0) {
-        LOGD("Capture failed to start: %d", rc);
-        return false;
-    }
     return true;
-    */
+
 }
 
+JNIEXPORT jint JNICALL
+JNI_OnLoad(JavaVM* vm, void* reserved UNUSED)
+{
+    LOGD("libusbaudio: loaded");
+    java_vm = vm;
 
-JNIEXPORT void JNICALL
-Java_com_eneaceolini_testusb_UsbAudio_stop(JNIEnv* env UNUSED, jobject foo UNUSED) {
-    do_exit = 1;
-    measure();
-}
-
-JNIEXPORT bool JNICALL
-Java_com_eneaceolini_testusb_UsbAudio_close(JNIEnv* env UNUSED, jobject foo UNUSED) {
-    if (do_exit == 0) {
-        return false;
-    }
-	libusb_release_interface(devh, IFACE_NUM);
-	if (devh)
-		libusb_close(devh);
-	libusb_exit(NULL);
-    return true;
-}
-
-
-JNIEXPORT void JNICALL
-Java_com_eneaceolini_testusb_UsbAudio_loop(JNIEnv* env UNUSED, jobject foo UNUSED) {
-	while (!do_exit) {
-		int rc = libusb_handle_events(NULL);
-		if (rc != LIBUSB_SUCCESS)
-			break;
-	}
-}
-
-
-void strcpytrimmed(char * dest, const char * src, int dest_malloced_size) {
-	const int charstocopy = dest_malloced_size - 1;
-
-	dest[charstocopy] = 0;
-
-	int firstspaceends;
-	for (firstspaceends = 0; (firstspaceends < charstocopy) && (src[firstspaceends] == ' '); firstspaceends++);
-
-	int lastspacestarts;
-	for (lastspacestarts = charstocopy-1; (lastspacestarts >= firstspaceends) && (src[lastspacestarts] == ' '); lastspacestarts--);
-
-	const int srcrealsize = lastspacestarts - firstspaceends + 1;
-
-	memcpy(dest, &src[firstspaceends], (srcrealsize) * sizeof(char));
-}
-
-void allocate_args_from_string(const char * string, int nargslength, int * argc, char *** argv) {
-	int i;
-
-	(*argc) = 1;
-	for (i = 0; i < nargslength; i++)
-		if (string[i] == ' ')
-			(*argc)++;
-
-	if ((*argc) == nargslength+1) {
-		(*argc) = 0;
-		return;
-	}
-
-	(*argv) = malloc(((*argc)+2) * sizeof(char *));
-	(*argv)[0] = 0;
-	int id = 1;
-	const char * laststart = string;
-	int lastlength = 0;
-	for (i = 0; i < nargslength-1; i++) {
-		lastlength++;
-		if (string[i] == ' ' && string[i+1] != ' ') {
-
-			(*argv)[id] = (char *) malloc(lastlength);
-			strcpytrimmed((*argv)[id++], laststart, lastlength);
-
-			laststart = &string[i+1];
-			lastlength = 0;
-		}
-	}
-	lastlength++;
-	(*argv)[id] = (char *) malloc(lastlength+1);
-	strcpytrimmed((*argv)[id++], laststart, lastlength+1);
-	(*argv)[id] = 0;
-	(*argc) = id;
+    return JNI_VERSION_1_6;
 }
 
 
